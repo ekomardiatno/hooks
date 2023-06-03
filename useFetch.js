@@ -7,25 +7,27 @@ const useFetch = (service, callback) => {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [reload, setReload] = useState(false)
-  const [source, setSource] = useState(null)
+  const [cancelTokenSource, setCancelTokenSource] = useState(null)
 
   useEffect(() => {
+    if(!loading) return null
     const cancelToken = axios.cancelToken
-    setSource(cancelToken.source())
+    const source = cancelToken.source()
+    setCancelTokenSource(source)
+    fetch(source)
     return () => {
-      setSource(null)
-      cancelToken.source().cancel(CANCEL_REQUEST)
+      setCancelTokenSource(null)
+      source.cancel(CANCEL_REQUEST)
     }
-  }, [])
+  }, [loading])
 
-  const fetch = useCallback(() => {
-    if (!source) return
-    if (reload) return setReload(false)
+  const fetch = (source) => {
+
     if (!service) return setLoading(false)
-    setLoading(true)
+    const definedService = service(source.token)
+    if (!definedService) return setLoading(false)
     setError(null)
-    service(source.token)
+    definedService
       .then(res => {
         if (!res.success) {
           if (typeof callback === 'function') callback(res, true)
@@ -41,13 +43,11 @@ const useFetch = (service, callback) => {
       .finally(() => {
         setLoading(false)
       })
-  }, [source, reload])
+  })
 
-  useEffect(() => {
-    fetch()
-  }, [fetch])
 
-  return { data, loading, error, reloading: () => setReload(true), canceling: () => source.cancel(CANCEL_REQUEST) }
+
+  return { data, loading, error, reloading: () => setLoading(true), canceling: () => cancelTokenSource?.cancel(CANCEL_REQUEST) }
 }
 
 export default useFetch
