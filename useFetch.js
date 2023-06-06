@@ -22,7 +22,6 @@ const useFetch = (service, callback) => {
   }, [loading])
 
   const fetch = (source) => {
-
     if (!service) return setLoading(false)
     const definedService = service(source.token)
     if (!definedService) return setLoading(false)
@@ -45,11 +44,7 @@ const useFetch = (service, callback) => {
       })
   })
 
-
-
   return { data, loading, error, reloading: () => setLoading(true), canceling: () => cancelTokenSource?.cancel(CANCEL_REQUEST) }
 }
 
 export default useFetch
-
-
